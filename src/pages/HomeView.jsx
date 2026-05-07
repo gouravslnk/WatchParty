@@ -77,7 +77,7 @@ export default function HomeView() {
           </p>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { step: "01", title: "Host creates a room", desc: "Pick a video URL or local file. A unique room code is generated." },
+              { step: "01", title: "Host creates a room", desc: "Pick a video URL. A unique room code is generated." },
               { step: "02", title: "Friends join via code", desc: "Share the 6-character code. No accounts — just enter a name." },
               { step: "03", title: "Stay in sync", desc: "The host's play/pause/seek is broadcast to everyone via the socket server." },
             ].map(({ step, title, desc }) => (

@@ -53,16 +53,6 @@ export const useUserStore = create((set) => ({
   reset: () => set({ username: "", isAdmin: false }),
 }));
 
-// ─── VIDEO STORE ──────────────────────────────────────────────────────────────
-export const useVideoStore = create((set) => ({
-  videoPath: "",        // local blob URL (offline mode)
-  latestTime: 0,        // saved time before component remount
-  latestPlaying: false,
-  setVideoPath: (videoPath) => set({ videoPath }),
-  saveState: (time, playing) => set({ latestTime: time, latestPlaying: playing }),
-  reset: () => set({ videoPath: "", latestTime: 0, latestPlaying: false }),
-}));
-
 // ─── CHAT STORE ───────────────────────────────────────────────────────────────
 export const useChatStore = create((set) => ({
   messages: [],       // { id, type: "message"|"log"|"system", username, text, time }

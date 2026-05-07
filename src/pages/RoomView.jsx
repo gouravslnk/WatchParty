@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "../lib/supabase";
-import { useSocketStore, useUserStore, useVideoStore, useChatStore } from "../stores";
+import { useSocketStore, useUserStore, useChatStore } from "../stores";
 import { getCurrentTime } from "../lib/rooms";
 import VideoPlayer from "../components/VideoPlayer";
 import Sidebar from "../components/Sidebar";
@@ -15,7 +15,6 @@ export default function RoomView() {
 
   const socketStore = useSocketStore();
   const { username, isAdmin, setIsAdmin } = useUserStore();
-  const videoStore = useVideoStore();
   const chatStore = useChatStore();
 
   const [room, setRoom] = useState(null);
@@ -133,10 +132,9 @@ export default function RoomView() {
     }
     socketStore.disconnect();
     useUserStore.getState().reset();
-    videoStore.reset();
     chatStore.clearMessages();
     navigate("/", { replace: true });
-  }, [socketStore, videoStore, chatStore, navigate]);
+  }, [socketStore, chatStore, navigate]);
 
   const sendReaction = useCallback((emoji) => {
     socketStore.socket?.emit("send-reaction", emoji);
@@ -180,10 +178,10 @@ export default function RoomView() {
         <div className="flex-1 relative bg-black">
           {room && (
             <VideoPlayer
+              key={`${room.roomCode}:${room?.files?.[0]?.url || ""}`}
               room={room}
               isAdmin={isAdmin}
               socket={socketStore.socket}
-              videoPath={videoStore.videoPath}
             />
           )}
 

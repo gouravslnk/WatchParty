@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Copy, Check, Crown, Link as LinkIcon, LogOut, Users, Video, X,
@@ -7,7 +6,6 @@ import {
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useChatStore } from "../stores";
-import { normalizeRoomCode } from "../lib/rooms";
 
 export default function Sidebar({ room, isAdmin, username, members, socket, onLeave, onSendMessage }) {
   const chatStore = useChatStore();
@@ -48,18 +46,24 @@ export default function Sidebar({ room, isAdmin, username, members, socket, onLe
     e.preventDefault();
     if (!isAdmin) return;
     const url = newVideoUrl.trim();
-    if (!url) return;
+    if (!url) {
+      toast.error("Please enter a video URL.");
+      return;
+    }
 
     setChangingVideo(true);
     const { error } = await supabase
       .from("rooms")
-      .update({ files: [{ type: "video", url }] })
+      .update({ roomType: "online", files: [{ type: "video", url }] })
       .eq("roomCode", room.roomCode);
     setChangingVideo(false);
 
-    if (error) { toast.error("Failed to change video."); return; }
+    if (error) {
+      toast.error("Failed to change video.");
+      return;
+    }
 
-    socket?.emit("change-video", { newUrl: url });
+    socket?.emit("change-video", { roomType: "online", source: url });
     setNewVideoUrl("");
     setChangeVideoOpen(false);
     toast.success("Video changed for everyone!");
@@ -75,7 +79,7 @@ export default function Sidebar({ room, isAdmin, username, members, socket, onLe
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--accent)" }}>
-              {room?.roomType === "offline" ? "Local Sync" : "Online Stream"}
+              Online Stream
             </p>
             <h2 className="font-display font-bold text-white text-lg truncate">{room?.roomName}</h2>
             <p className="text-xs text-slate-400 mt-0.5">as <span className="text-white font-semibold">{username}</span></p>
@@ -132,7 +136,10 @@ export default function Sidebar({ room, isAdmin, username, members, socket, onLe
       {/* Host controls */}
       {isAdmin && (
         <div className="p-3 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
-          <button onClick={() => setChangeVideoOpen(true)} className="btn-ghost w-full text-sm py-2">
+          <button onClick={() => {
+            setNewVideoUrl("");
+            setChangeVideoOpen(true);
+          }} className="btn-ghost w-full text-sm py-2">
             <Video className="h-4 w-4" /> Change Video
           </button>
         </div>
@@ -185,7 +192,7 @@ export default function Sidebar({ room, isAdmin, username, members, socket, onLe
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="font-display font-bold text-white text-lg">Change Video</h3>
-                <p className="text-sm text-slate-400 mt-0.5">New URL applies to everyone instantly.</p>
+                <p className="text-sm text-slate-400 mt-0.5">Enter a new video URL for the whole room.</p>
               </div>
               <button className="btn-ghost w-9 h-9 p-0" onClick={() => setChangeVideoOpen(false)}>
                 <X className="h-4 w-4" />
