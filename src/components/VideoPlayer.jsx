@@ -1,10 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import ReactPlayer from "react-player";
 
-/**
- * VideoPlayer using react-player.
- * Perfectly supports YouTube iframes, Vimeo, MP4, and HLS seamlessly.
- */
 export default function VideoPlayer({ room, isAdmin, socket }) {
   const playerRef = useRef(null);
 
@@ -41,7 +37,7 @@ export default function VideoPlayer({ room, isAdmin, socket }) {
     return player ? !player.paused : playing;
   };
 
-  // ─── Socket events ────────────────────────────────────────────────────────
+  // Socket events 
   useEffect(() => {
     if (!socket) return;
 
@@ -81,7 +77,7 @@ export default function VideoPlayer({ room, isAdmin, socket }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, isAdmin, playing, loading]);
 
-  // ─── Failsafe Loading Timeout ──────────────────────────────────────────────
+  // Failsafe Loading Timeout 
   useEffect(() => {
     setLoading(true);
     setPlaying(false);
@@ -104,7 +100,7 @@ export default function VideoPlayer({ room, isAdmin, socket }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source, isAdmin]);
 
-  // ─── Host periodic sync broadcast ────────────────────────────────────────
+  // Host periodic sync broadcast 
   useEffect(() => {
     if (!isAdmin || !socket) return;
 

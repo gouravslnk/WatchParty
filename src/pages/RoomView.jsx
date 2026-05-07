@@ -6,7 +6,6 @@ import { useSocketStore, useUserStore, useChatStore } from "../stores";
 import { getCurrentTime } from "../lib/rooms";
 import VideoPlayer from "../components/VideoPlayer";
 import Sidebar from "../components/Sidebar";
-import ReactionOverlay from "../components/ReactionOverlay";
 import { MessageSquare, X } from "lucide-react";
 
 export default function RoomView() {
@@ -26,7 +25,7 @@ export default function RoomView() {
 
   const chatRef = useRef(null);
 
-  // ─── Load room from Supabase ────────────────────────────────────────────────
+  // Load room from Supabase 
   useEffect(() => {
     if (!username) {
       navigate(`/join?roomCode=${roomCode}`, { replace: true });
@@ -69,7 +68,7 @@ export default function RoomView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomCode]);
 
-  // ─── Connect socket & join room ─────────────────────────────────────────────
+  // Connect socket & join room 
   useEffect(() => {
     if (!room || !username) return;
 
@@ -185,8 +184,6 @@ export default function RoomView() {
             />
           )}
 
-          {/* Reaction overlay */}
-          <ReactionOverlay reactions={reactions} onExpire={(id) => setReactions(r => r.filter(x => x.id !== id))} />
         </div>
 
         {/* Bottom bar */}

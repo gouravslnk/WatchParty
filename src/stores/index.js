@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3001";
 
-// ─── SOCKET STORE ─────────────────────────────────────────────────────────────
+// SOCKET STORE 
 export const useSocketStore = create((set, get) => ({
   socket: null,
   connected: false,
@@ -44,7 +44,7 @@ export const useSocketStore = create((set, get) => ({
   },
 }));
 
-// ─── USER STORE ───────────────────────────────────────────────────────────────
+// USER STORE 
 export const useUserStore = create((set) => ({
   username: "",
   isAdmin: false,
@@ -53,7 +53,7 @@ export const useUserStore = create((set) => ({
   reset: () => set({ username: "", isAdmin: false }),
 }));
 
-// ─── CHAT STORE ───────────────────────────────────────────────────────────────
+// CHAT STORE 
 export const useChatStore = create((set) => ({
   messages: [],       // { id, type: "message"|"log"|"system", username, text, time }
   unreadCount: 0,

@@ -65,36 +65,6 @@ export default function HomeView() {
           ))}
         </div>
       </div>
-
-      {/* How it works */}
-      <div className="border-t px-6 py-16" style={{ borderColor: "var(--border)" }}>
-        <div className="max-w-3xl mx-auto">
-          <p
-            className="text-center text-xs font-semibold uppercase tracking-[0.2em] mb-8"
-            style={{ color: "var(--accent)" }}
-          >
-            How It Works
-          </p>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { step: "01", title: "Host creates a room", desc: "Pick a video URL. A unique room code is generated." },
-              { step: "02", title: "Friends join via code", desc: "Share the 6-character code. No accounts — just enter a name." },
-              { step: "03", title: "Stay in sync", desc: "The host's play/pause/seek is broadcast to everyone via the socket server." },
-            ].map(({ step, title, desc }) => (
-              <div key={step} className="glass rounded-2xl p-5">
-                <div
-                  className="font-mono text-xs font-bold mb-3"
-                  style={{ color: "var(--accent)" }}
-                >
-                  {step}
-                </div>
-                <h3 className="font-display font-bold text-white mb-2">{title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
