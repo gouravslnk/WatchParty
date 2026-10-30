@@ -6,7 +6,7 @@ import { useSocketStore, useUserStore, useChatStore } from "../stores";
 import { getCurrentTime } from "../lib/rooms";
 import VideoPlayer from "../components/VideoPlayer";
 import Sidebar from "../components/Sidebar";
-import { MessageSquare, X, Share2 } from "lucide-react";
+import { MessageSquare, X } from "lucide-react";
 
 export default function RoomView() {
   const { roomCode } = useParams();
@@ -253,16 +253,6 @@ export default function RoomView() {
     socketStore.socket?.emit("kick-user", { targetUsername });
   }, [isAdmin, socketStore]);
 
-  const handleCopyInvite = useCallback(async () => {
-    const url = `${window.location.origin}/join?roomCode=${encodeURIComponent(room?.roomCode || roomCode)}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success("Invite link copied to clipboard!");
-    } catch {
-      toast.error("Failed to copy link.");
-    }
-  }, [room?.roomCode, roomCode]);
-
 
 
   // Dynamic document title for browser tab and social visibility
@@ -373,17 +363,6 @@ export default function RoomView() {
                 </button>
               ))}
             </div>
-
-            {/* Copy Invite Link Button */}
-            <button
-              type="button"
-              onClick={handleCopyInvite}
-              className="btn-ghost text-xs py-1.5 px-2 sm:px-2.5 flex items-center gap-1 text-brand-300 hover:text-white bg-brand-500/10 hover:bg-brand-500/20 border-brand-500/30"
-              title="Copy Invite Link"
-            >
-              <Share2 className="h-3.5 w-3.5 text-brand-400" />
-              <span className="hidden md:inline font-semibold">Share Link</span>
-            </button>
 
             {/* Sidebar toggle button */}
             <button
