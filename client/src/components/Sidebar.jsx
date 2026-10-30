@@ -208,9 +208,15 @@ export default function Sidebar({
 
             {/* Invite Button & Code */}
             <div className="flex items-center gap-2">
-              <button onClick={copyInvite} className="btn-ghost flex-1 text-xs py-2">
-                {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <LinkIcon className="h-3.5 w-3.5" />}
-                {copied ? "Link Copied!" : "Copy Invite Link"}
+              <button
+                type="button"
+                onClick={copyInvite}
+                className="btn-ghost flex-1 text-xs py-2 flex items-center justify-center gap-1.5"
+              >
+                {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <LinkIcon className="h-3.5 w-3.5 text-brand-400" />}
+                <span className={copied ? "text-emerald-300 font-semibold" : "text-slate-300"}>
+                  {copied ? "Link Copied!" : "Copy Invite Link"}
+                </span>
               </button>
               <div
                 className="px-3 py-2 rounded-xl font-mono text-sm font-bold text-white flex items-center shrink-0"
