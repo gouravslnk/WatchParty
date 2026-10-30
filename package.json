@@ -1,0 +1,26 @@
+{
+  "name": "watchparty",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Real-time synchronized video watching platform with chat and reactions",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev:client": "npm run dev --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "build:client": "npm run build --prefix client",
+    "start:server": "npm run start --prefix server",
+    "install:all": "npm install --prefix client && npm install --prefix server"
+  },
+  "keywords": [
+    "watchparty",
+    "react",
+    "vite",
+    "socket.io",
+    "supabase"
+  ],
+  "author": "",
+  "license": "ISC"
+}
