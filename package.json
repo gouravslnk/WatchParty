@@ -3,10 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "description": "Real-time synchronized video watching platform with chat and reactions",
-  "workspaces": [
-    "client",
-    "server"
-  ],
   "scripts": {
     "dev:client": "npm run dev --prefix client",
     "dev:server": "npm run dev --prefix server",
