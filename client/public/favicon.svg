@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="wp-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#181335" />
+      <stop offset="100%" stop-color="#080a10" />
+    </linearGradient>
+    <linearGradient id="wp-border" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c6fea" />
+      <stop offset="50%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#e05fff" />
+    </linearGradient>
+    <linearGradient id="wp-play" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5bf5d4" />
+      <stop offset="50%" stop-color="#7c6fea" />
+      <stop offset="100%" stop-color="#e05fff" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#7c6fea" flood-opacity="0.45" />
+    </filter>
+  </defs>
+
+  <!-- Background Squircle with Gradient Border -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#wp-bg)" stroke="url(#wp-border)" stroke-width="2.5" />
+
+  <!-- Cinema Reel / Screen Border -->
+  <rect x="12" y="14" width="40" height="36" rx="8" fill="#0b0e17" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+
+  <!-- Top Cinema Sprockets -->
+  <rect x="16" y="16.5" width="4" height="3" rx="1" fill="#7c6fea" opacity="0.8" />
+  <rect x="24" y="16.5" width="4" height="3" rx="1" fill="#a855f7" opacity="0.8" />
+  <rect x="36" y="16.5" width="4" height="3" rx="1" fill="#c084fc" opacity="0.8" />
+  <rect x="44" y="16.5" width="4" height="3" rx="1" fill="#e05fff" opacity="0.8" />
+
+  <!-- Center Play Button with Glow -->
+  <path d="M26 25L42 33L26 41V25Z" fill="url(#wp-play)" filter="url(#glow)" />
+
+  <!-- Bottom Cinema Sprockets -->
+  <rect x="16" y="44.5" width="4" height="3" rx="1" fill="#7c6fea" opacity="0.8" />
+  <rect x="24" y="44.5" width="4" height="3" rx="1" fill="#a855f7" opacity="0.8" />
+  <rect x="36" y="44.5" width="4" height="3" rx="1" fill="#c084fc" opacity="0.8" />
+  <rect x="44" y="44.5" width="4" height="3" rx="1" fill="#e05fff" opacity="0.8" />
+</svg>

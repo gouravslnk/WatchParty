@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Film, Users, Zap, Shield, Wifi, MessageSquare } from "lucide-react";
+import { Users, Zap, Shield, Wifi, MessageSquare } from "lucide-react";
 
 export default function HomeView() {
   return (
@@ -16,19 +16,19 @@ export default function HomeView() {
         </div>
 
         {/* Logo */}
-        <div className="relative mb-8 flex items-center gap-3">
-          <div
-            className="flex h-14 w-14 items-center justify-center rounded-2xl"
-            style={{ background: "linear-gradient(135deg, var(--accent), var(--accent2))", boxShadow: "0 0 40px rgba(124,111,234,0.4)" }}
-          >
-            <Film className="h-7 w-7 text-white" />
-          </div>
-          <span className="font-display text-4xl font-bold text-white tracking-tight">
+        <div className="relative mb-8 flex items-center gap-3.5">
+          <img
+            src="/favicon.svg"
+            alt="WatchParty Logo"
+            className="w-14 h-14 rounded-2xl shadow-2xl transition-transform hover:scale-105"
+            style={{ boxShadow: "0 0 35px rgba(124,111,234,0.45)" }}
+          />
+          <span className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
             watch<span style={{ color: "var(--accent)" }}>party</span>
           </span>
         </div>
 
-        <h1 className="font-display text-4xl font-bold text-white mb-4 max-w-xl">
+        <h1 className="font-display text-3xl sm:text-5xl font-bold text-white mb-4 max-w-xl leading-tight">
           Watch together, <span style={{ color: "var(--cyan)" }}>perfectly in sync</span>
         </h1>
         <p className="text-slate-400 text-lg max-w-md mb-12 leading-relaxed">

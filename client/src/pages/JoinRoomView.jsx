@@ -44,17 +44,31 @@ export default function JoinRoomView() {
       return;
     }
 
+    // A joiner cannot become host simply by entering the admin's name.
+    // Only a tab possessing the secret hostToken for this room is recognized as host.
+    const hostToken = sessionStorage.getItem(`wp_host_token_${roomCode}`);
+    const isHost = Boolean(hostToken);
+
+    sessionStorage.setItem("wp_username", username);
+    localStorage.removeItem(`wp_host_${roomCode}`);
+
     setUsername(username);
-    setIsAdmin(false);
+    setIsAdmin(isHost);
     navigate(`/room/${roomCode}`);
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: "var(--bg)" }}>
       <div className="w-full max-w-md">
-        <Link to="/" className="btn-ghost inline-flex mb-8 text-sm">
-          <ArrowLeft className="h-4 w-4" /> Back
-        </Link>
+        <div className="flex items-center justify-between mb-8">
+          <Link to="/" className="btn-ghost inline-flex text-sm">
+            <ArrowLeft className="h-4 w-4" /> Back
+          </Link>
+          <Link to="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
+            <img src="/favicon.svg" alt="WatchParty" className="w-7 h-7 rounded-lg" />
+            <span className="font-display font-bold text-white tracking-tight text-lg">watch<span style={{ color: "var(--accent)" }}>party</span></span>
+          </Link>
+        </div>
 
         <h1 className="font-display text-3xl font-bold text-white mb-2">Join a Room</h1>
         <p className="text-slate-400 mb-8">Enter the room code from your host to join the party.</p>

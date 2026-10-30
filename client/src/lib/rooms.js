@@ -1,4 +1,3 @@
-import { supabase } from "./supabase";
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -10,20 +9,6 @@ export function createRoomCode(length = 6) {
 
 export function normalizeRoomCode(code = "") {
   return code.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 8);
-}
-
-export function getClientId() {
-  const key = "wp-client-id";
-  let id = localStorage.getItem(key);
-  if (!id) {
-    id = window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    localStorage.setItem(key, id);
-  }
-  return id;
-}
-
-export async function deleteRoom(roomCode) {
-  return supabase.from("rooms").delete().eq("roomCode", normalizeRoomCode(roomCode));
 }
 
 export function formatTime(seconds) {

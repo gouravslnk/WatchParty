@@ -60,6 +60,11 @@ export default function CreateRoomView() {
       return;
     }
 
+    const hostToken = window.crypto?.randomUUID?.() || (Date.now().toString(36) + Math.random().toString(36).slice(2));
+    sessionStorage.setItem(`wp_host_token_${roomCode}`, hostToken);
+    sessionStorage.setItem("wp_username", username);
+    localStorage.removeItem(`wp_host_${roomCode}`);
+    
     setUsername(username);
     setIsAdmin(true);
 
@@ -69,9 +74,15 @@ export default function CreateRoomView() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: "var(--bg)" }}>
       <div className="w-full max-w-2xl">
-        <Link to="/" className="btn-ghost inline-flex mb-8 text-sm">
-          <ArrowLeft className="h-4 w-4" /> Back
-        </Link>
+        <div className="flex items-center justify-between mb-8">
+          <Link to="/" className="btn-ghost inline-flex text-sm">
+            <ArrowLeft className="h-4 w-4" /> Back
+          </Link>
+          <Link to="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
+            <img src="/favicon.svg" alt="WatchParty" className="w-7 h-7 rounded-lg" />
+            <span className="font-display font-bold text-white tracking-tight text-lg">watch<span style={{ color: "var(--accent)" }}>party</span></span>
+          </Link>
+        </div>
 
         <h1 className="font-display text-3xl font-bold text-white mb-2">Create a Room</h1>
         <p className="text-slate-400 mb-8">You'll be the host — you control playback for everyone.</p>

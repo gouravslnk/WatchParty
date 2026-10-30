@@ -1,220 +1,184 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import ReactPlayer from "react-player";
 
 export default function VideoPlayer({ room, isAdmin, socket }) {
   const playerRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
-  const [syncStatus, setSyncStatus] = useState("Connecting...");
+  const [syncStatus, setSyncStatus] = useState("In sync");
   const [playing, setPlaying] = useState(false);
-  const [needsPlaybackUnlock, setNeedsPlaybackUnlock] = useState(false);
 
-  // Refs for sync state management
-  const isSynced = useRef(false);
+  // Sync state refs to prevent re-entrant loops
   const isUpdatingFromSocket = useRef(false);
-  const pendingSync = useRef(null);
-  const viewerPlaybackUnlocked = useRef(false);
-  const latestRemoteState = useRef({ currentTime: 0, isPlaying: false });
 
   const files = room?.files || [];
   const videoFile = useMemo(() => files.find(f => f.type === "video"), [files]);
   const source = videoFile?.url || "";
 
-  const getPlayerTime = () => {
-    const player = playerRef.current;
-    if (!player) return 0;
-    return Number.isFinite(player.currentTime) ? player.currentTime : 0;
-  };
+  // Helper to reliably get current playback time from HTML5 video or ReactPlayer
+  const getPlayerTime = useCallback(() => {
+    const p = playerRef.current;
+    if (!p) return 0;
+    if (typeof p.currentTime === "number" && Number.isFinite(p.currentTime)) {
+      return p.currentTime;
+    }
+    if (typeof p.getCurrentTime === "function") {
+      const t = p.getCurrentTime();
+      if (Number.isFinite(t)) return t;
+    }
+    const internal = p.getInternalPlayer?.();
+    if (internal && typeof internal.currentTime === "number" && Number.isFinite(internal.currentTime)) {
+      return internal.currentTime;
+    }
+    return 0;
+  }, []);
 
-  const seekPlayer = (seconds) => {
-    const player = playerRef.current;
-    if (!player || !Number.isFinite(seconds)) return;
-    player.currentTime = Math.max(0, seconds);
-  };
+  // Helper to reliably seek in HTML5 video or ReactPlayer
+  const seekPlayer = useCallback((seconds) => {
+    const p = playerRef.current;
+    if (!p || !Number.isFinite(seconds)) return;
+    const target = Math.max(0, seconds);
+    try {
+      if ("currentTime" in p && typeof p.currentTime === "number") {
+        p.currentTime = target;
+      }
+      if (typeof p.seekTo === "function") {
+        p.seekTo(target, "seconds");
+      }
+      const internal = p.getInternalPlayer?.();
+      if (internal && typeof internal.currentTime === "number") {
+        internal.currentTime = target;
+      }
+    } catch (err) {
+      console.warn("Seek error:", err);
+    }
+  }, []);
 
-  const getPlayerIsPlaying = () => {
-    const player = playerRef.current;
-    return player ? !player.paused : playing;
-  };
+  // Check if player is currently playing in the DOM
+  const isPlayerPlaying = useCallback(() => {
+    const p = playerRef.current;
+    if (p && typeof p.paused === "boolean") {
+      return !p.paused;
+    }
+    return playing;
+  }, [playing]);
 
-  // Socket events 
+  // Host emits player controls to server
+  const emitPlayerControl = useCallback((message, isPlayingOverride) => {
+    if (!isAdmin || !socket || !playerRef.current) return;
+
+    const actualPlaying = typeof isPlayingOverride === "boolean" ? isPlayingOverride : isPlayerPlaying();
+    const actualTime = getPlayerTime();
+
+    socket.emit("player-control", {
+      message,
+      currentTime: actualTime,
+      isPlaying: actualPlaying,
+    });
+  }, [isAdmin, socket, isPlayerPlaying, getPlayerTime]);
+
+  // Viewer receives remote playback updates from Host
+  const applyRemoteState = useCallback((remoteIsPlaying, remoteCurrentTime) => {
+    if (!playerRef.current) return;
+    isUpdatingFromSocket.current = true;
+
+    // Seek if viewer is out of sync by more than 1 second
+    const localTime = getPlayerTime();
+    if (Number.isFinite(remoteCurrentTime) && Math.abs(localTime - remoteCurrentTime) > 1.0) {
+      seekPlayer(remoteCurrentTime);
+    }
+
+    // Set playing state to match host
+    setPlaying(Boolean(remoteIsPlaying));
+    setSyncStatus("In sync");
+
+    setTimeout(() => {
+      isUpdatingFromSocket.current = false;
+    }, 500);
+  }, [getPlayerTime, seekPlayer]);
+
+  // Socket event listeners
   useEffect(() => {
     if (!socket) return;
 
-    const onPlayerUpdate = ({ isPlaying, currentTime, message }) => {
-      if (isAdmin) return; // Host ignores these
-      applyRemoteState(isPlaying, currentTime, message);
+    const onPlayerUpdate = ({ isPlaying: remotePlaying, currentTime: remoteTime }) => {
+      if (isAdmin) return; // Host drives playback, ignores remote updates
+      applyRemoteState(remotePlaying, remoteTime);
     };
 
+    // Host responds to newly joined viewer requesting state
     const onRequestVideoState = ({ requestingSocketId }) => {
       if (!isAdmin || !playerRef.current) return;
       socket.emit("video-state-response", {
         requestingSocketId,
         currentTime: getPlayerTime(),
-        isPlaying: getPlayerIsPlaying(),
+        isPlaying: isPlayerPlaying(),
       });
     };
 
-    const onSyncVideoState = ({ currentTime, isPlaying }) => {
-      if (isSynced.current) return;
-      pendingSync.current = { currentTime, isPlaying };
-      if (!loading) applyPendingSync();
+    // Viewer receives initial state sync from Host
+    const onSyncVideoState = ({ currentTime: remoteTime, isPlaying: remotePlaying }) => {
+      if (isAdmin) return;
+      applyRemoteState(remotePlaying, remoteTime);
     };
-
-    const onVideoChanged = () => {};
 
     socket.on("player-update", onPlayerUpdate);
     socket.on("request-video-state", onRequestVideoState);
     socket.on("sync-video-state", onSyncVideoState);
-    socket.on("video-changed", onVideoChanged);
 
     return () => {
       socket.off("player-update", onPlayerUpdate);
       socket.off("request-video-state", onRequestVideoState);
       socket.off("sync-video-state", onSyncVideoState);
-      socket.off("video-changed", onVideoChanged);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [socket, isAdmin, playing, loading]);
+  }, [socket, isAdmin, applyRemoteState, getPlayerTime, isPlayerPlaying]);
 
-  // Failsafe Loading Timeout 
-  useEffect(() => {
-    setLoading(true);
-    setPlaying(false);
-    setNeedsPlaybackUnlock(false);
-    isSynced.current = false;
-    pendingSync.current = null;
-    viewerPlaybackUnlocked.current = isAdmin;
-    latestRemoteState.current = { currentTime: 0, isPlaying: false };
-    setSyncStatus(isAdmin ? "Loading host player..." : "Syncing with host...");
-
-    const timer = setTimeout(() => {
-      setLoading(false);
-      if (pendingSync.current) applyPendingSync();
-      else if (!isSynced.current) {
-        isSynced.current = true;
-        setSyncStatus(isAdmin ? "You control playback" : "In sync");
-      }
-    }, 2500); // 2.5 seconds maximum loading screen
-    return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, isAdmin]);
-
-  // Host periodic sync broadcast 
+  // Host periodic heartbeat sync (every 1.5s while active)
   useEffect(() => {
     if (!isAdmin || !socket) return;
 
     const interval = setInterval(() => {
-      if (!getPlayerIsPlaying() || !playerRef.current) return;
-      socket.emit("player-control", {
-        message: "sync",
-        currentTime: getPlayerTime(),
-        isPlaying: true,
-      });
-    }, 3000);
+      if (!playerRef.current) return;
+      emitPlayerControl("sync");
+    }, 1500);
 
     return () => clearInterval(interval);
-  }, [isAdmin, socket, playing]);
+  }, [isAdmin, socket, emitPlayerControl]);
 
-  const applyPendingSync = () => {
-    if (!pendingSync.current || isSynced.current) return;
-    const { currentTime, isPlaying } = pendingSync.current;
-    pendingSync.current = null;
-    isSynced.current = true;
-    applyRemoteState(isPlaying, currentTime);
-    setSyncStatus("In sync");
-  };
-
-  const applyRemoteState = (remoteIsPlaying, remoteCurrentTime, logMessage) => {
-    if (!playerRef.current) return;
-    isUpdatingFromSocket.current = true;
-    latestRemoteState.current = { currentTime: remoteCurrentTime, isPlaying: remoteIsPlaying };
-
-    // Seek if out of sync
-    const localTime = getPlayerTime();
-    if (Math.abs(localTime - remoteCurrentTime) > 2) {
-      seekPlayer(remoteCurrentTime);
-    }
-
-    if (!isAdmin && remoteIsPlaying && !viewerPlaybackUnlocked.current) {
-      setPlaying(false);
-      setNeedsPlaybackUnlock(true);
-      setSyncStatus("Click to sync");
-      setTimeout(() => { isUpdatingFromSocket.current = false; }, 800);
-      return;
-    }
-
-    if (!remoteIsPlaying) {
-      setNeedsPlaybackUnlock(false);
-    }
-
-    setPlaying(remoteIsPlaying);
-    setSyncStatus("In sync");
-    
-    setTimeout(() => { isUpdatingFromSocket.current = false; }, 800);
-  };
-
-  const emitPlayerControl = (message, isPlayingOverride = playing) => {
-    if (!isAdmin || !socket || !playerRef.current) return;
-    if (!isSynced.current && message !== "sync") return;
-
-    socket.emit("player-control", {
-      message,
-      currentTime: getPlayerTime(),
-      isPlaying: isPlayingOverride,
-    });
-  };
-
+  // Handle Play
   const handlePlay = () => {
-    if (isUpdatingFromSocket.current || !isAdmin) return;
+    if (isUpdatingFromSocket.current) return;
     setPlaying(true);
-    setTimeout(() => emitPlayerControl("play", true), 100);
+    if (isAdmin) {
+      setTimeout(() => emitPlayerControl("play", true), 60);
+    }
   };
 
+  // Handle Pause
   const handlePause = () => {
-    if (isUpdatingFromSocket.current || !isAdmin) return;
+    if (isUpdatingFromSocket.current) return;
     setPlaying(false);
-    setTimeout(() => emitPlayerControl("pause", false), 100);
+    if (isAdmin) {
+      setTimeout(() => emitPlayerControl("pause", false), 60);
+    }
   };
 
+  // Handle Seek
   const handleSeek = () => {
-    if (isUpdatingFromSocket.current || !isAdmin) return;
-    setTimeout(() => emitPlayerControl("seek", playing), 100);
+    if (isUpdatingFromSocket.current) return;
+    if (isAdmin) {
+      setTimeout(() => emitPlayerControl("seek"), 60);
+    }
   };
 
   const handleReady = () => {
     setLoading(false);
-    setSyncStatus(isAdmin ? "You control playback" : "Syncing with host...");
-    if (pendingSync.current) applyPendingSync();
-    else if (!isSynced.current) {
-      setTimeout(() => { isSynced.current = true; setSyncStatus("In sync"); }, 2000);
-    }
+    setSyncStatus(isAdmin ? "You control playback" : "In sync");
   };
 
   const handleError = (e) => {
-    console.error("Player error", e);
-    setLoading(false); // remove loading state so user doesn't get stuck forever
-  };
-
-  const handleUnlockPlayback = async () => {
-    const { currentTime, isPlaying } = latestRemoteState.current;
-    viewerPlaybackUnlocked.current = true;
-    setNeedsPlaybackUnlock(false);
-    setSyncStatus("In sync");
-    seekPlayer(currentTime);
-    setPlaying(isPlaying);
-
-    if (isPlaying && playerRef.current?.play) {
-      try {
-        await playerRef.current.play();
-      } catch (error) {
-        console.warn("Playback unlock failed", error);
-        viewerPlaybackUnlocked.current = false;
-        setNeedsPlaybackUnlock(true);
-        setPlaying(false);
-        setSyncStatus("Click to sync");
-      }
-    }
+    console.error("Player error:", e);
+    setLoading(false);
   };
 
   return (
@@ -226,28 +190,18 @@ export default function VideoPlayer({ room, isAdmin, socket }) {
         </div>
       )}
 
-      {needsPlaybackUnlock && !loading && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70 px-6">
-          <button
-            type="button"
-            onClick={handleUnlockPlayback}
-            className="btn-primary"
-          >
-            Enable synced playback
-          </button>
-        </div>
-      )}
-
       {/* Sync status indicator */}
       <div
-        className="absolute top-3 left-3 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-opacity pointer-events-none"
-        style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.1)" }}
+        className="absolute top-3 left-3 z-10 flex items-center gap-2 px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all pointer-events-none select-none shadow-lg"
+        style={{ background: "rgba(10,12,18,0.75)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.15)" }}
       >
         <span
-          className="w-2 h-2 rounded-full"
+          className="w-2 h-2 rounded-full shrink-0"
           style={{ background: isAdmin ? "var(--accent)" : syncStatus === "In sync" ? "#22c55e" : "#f59e0b" }}
         />
-        {isAdmin ? "HOST" : syncStatus}
+        <span className="text-white text-[11px] sm:text-xs font-bold tracking-wide">
+          {isAdmin ? "👑 HOST" : syncStatus}
+        </span>
       </div>
 
       <div className="flex-1 w-full h-full relative bg-black">
@@ -259,9 +213,9 @@ export default function VideoPlayer({ room, isAdmin, socket }) {
             width="100%"
             height="100%"
             controls={true}
-            playing={isAdmin ? undefined : playing}
+            playing={playing}
             onReady={handleReady}
-            onLoadedMetadata={handleReady}
+            onStart={handleReady}
             onPlay={handlePlay}
             onPause={handlePause}
             onSeeked={handleSeek}
@@ -269,7 +223,7 @@ export default function VideoPlayer({ room, isAdmin, socket }) {
             playsInline
             config={{
               youtube: {
-                modestbranding: 1, 
+                modestbranding: 1,
                 rel: 0,
                 origin: typeof window !== "undefined" ? window.location.origin : ""
               },

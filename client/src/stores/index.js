@@ -45,12 +45,34 @@ export const useSocketStore = create((set, get) => ({
 }));
 
 // USER STORE 
+// Uses sessionStorage so multiple tabs in the same browser have independent identities
+const initialUsername = typeof window !== "undefined" 
+  ? (sessionStorage.getItem("wp_username") || "") 
+  : "";
+
 export const useUserStore = create((set) => ({
-  username: "",
+  username: initialUsername,
   isAdmin: false,
-  setUsername: (username) => set({ username }),
+  setUsername: (username) => {
+    if (typeof window !== "undefined") {
+      if (username) {
+        sessionStorage.setItem("wp_username", username);
+      } else {
+        sessionStorage.removeItem("wp_username");
+      }
+      // Purge legacy cross-tab pollution
+      localStorage.removeItem("wp_username");
+    }
+    set({ username });
+  },
   setIsAdmin: (isAdmin) => set({ isAdmin }),
-  reset: () => set({ username: "", isAdmin: false }),
+  reset: () => {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("wp_username");
+      localStorage.removeItem("wp_username");
+    }
+    set({ username: "", isAdmin: false });
+  },
 }));
 
 // CHAT STORE 
@@ -60,10 +82,19 @@ export const useChatStore = create((set) => ({
   chatOpen: true,
 
   addMessage: (msg) =>
-    set((s) => ({
-      messages: [...s.messages.slice(-200), { id: Date.now() + Math.random(), ...msg, type: "message" }],
-      unreadCount: s.chatOpen ? 0 : s.unreadCount + 1,
-    })),
+    set((s) => {
+      const last = s.messages[s.messages.length - 1];
+      if (last && last.type === "message" && last.text === msg.text) {
+        const sameUser =
+          last.username === msg.username ||
+          (last.username === "You" && msg.username === "You");
+        if (sameUser) return s;
+      }
+      return {
+        messages: [...s.messages.slice(-200), { id: Date.now() + Math.random(), ...msg, type: "message" }],
+        unreadCount: s.chatOpen ? 0 : s.unreadCount + 1,
+      };
+    }),
 
   addLog: (msg) =>
     set((s) => ({
@@ -71,9 +102,23 @@ export const useChatStore = create((set) => ({
     })),
 
   addSystem: (text) =>
-    set((s) => ({
-      messages: [...s.messages.slice(-200), { id: Date.now() + Math.random(), type: "system", text, time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) }],
-    })),
+    set((s) => {
+      const last = s.messages[s.messages.length - 1];
+      if (last && last.type === "system" && last.text === text) {
+        return s;
+      }
+      return {
+        messages: [
+          ...s.messages.slice(-200),
+          {
+            id: Date.now() + Math.random(),
+            type: "system",
+            text,
+            time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+          },
+        ],
+      };
+    }),
 
   clearMessages: () => set({ messages: [] }),
   setChatOpen: (open) => set({ chatOpen: open, unreadCount: open ? 0 : 0 }),
