@@ -21,6 +21,6 @@
     "socket.io",
     "supabase"
   ],
-  "author": "",
-  "license": "ISC"
+  "author": "Gourav Solanki",
+  "license": "MIT"
 }

@@ -271,4 +271,4 @@ npm run dev:server
 
 ## License
 
-This project is licensed under the ISC License. Refer to the project license documentation for further details.
+This project is licensed under the MIT License.
